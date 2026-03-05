@@ -10,10 +10,11 @@ st.write("Extraction spécifique : Serial Number, Customer, Location, Date.")
 
 # --- CONFIGURATION : Modifie les noms ci-dessous pour qu'ils correspondent EXACTEMENT aux noms dans ton PDF ---
 CHAMPS_A_GARDER = [
-    "serial number", 
-    "customer", 
-    "location", 
-    "date de reception"
+    "serial number",
+    "MODEL NO", 
+    "SYMPTOMS", 
+    "WORK PERFORMED", 
+    "DATE RECEIVED"
 ]
 # -------------------------------------------------------------------------------------------------------
 
