@@ -3,61 +3,68 @@ import fitz  # PyMuPDF
 import pandas as pd
 import io
 
-st.set_page_config(page_title="Extracteur PDF Batch", page_icon="🗂️")
+st.set_page_config(page_title="Extracteur Filtré", page_icon="🔍")
 
-st.title("🗂️ Extracteur Multi-PDF vers Excel")
-st.write("Glissez plusieurs formulaires PDF ici pour les regrouper dans un seul tableau.")
+st.title("🔍 Extracteur PDF Ciblé")
+st.write("Extraction spécifique : Serial Number, Customer, Location, Date.")
 
-# 1. Autoriser la sélection de plusieurs fichiers
+# --- CONFIGURATION : Modifie les noms ci-dessous pour qu'ils correspondent EXACTEMENT aux noms dans ton PDF ---
+CHAMPS_A_GARDER = [
+    "serial number", 
+    "customer", 
+    "location", 
+    "date de reception"
+]
+# -------------------------------------------------------------------------------------------------------
+
 fichiers_uploades = st.file_uploader(
     "Choisir les formulaires PDF", 
     type="pdf", 
-    accept_multiple_files=True  # L'option clé est ici
+    accept_multiple_files=True
 )
 
 if fichiers_uploades:
     toutes_les_donnees = []
     
-    st.info(f"Analyse de {len(fichiers_uploades)} fichiers en cours...")
-    
     for fichier in fichiers_uploades:
         try:
-            # Lire chaque PDF
             doc = fitz.open(stream=fichier.read(), filetype="pdf")
-            donnees_du_fichier = {"Nom_Fichier": fichier.name} # On ajoute le nom du fichier pour s'y retrouver
             
-            # Extraire les champs
+            # On commence par noter le nom du fichier
+            infos_filtrees = {"Nom_Fichier": fichier.name}
+            
+            # Extraction des champs
             for page in doc:
                 for widget in page.widgets():
-                    donnees_du_fichier[widget.field_name] = widget.field_value
+                    nom_brut = widget.field_name
+                    # On vérifie si ce champ fait partie de notre liste (en minuscules pour éviter les erreurs)
+                    if nom_brut.lower() in [c.lower() for c in CHAMPS_A_GARDER]:
+                        infos_filtrees[nom_brut] = widget.field_value
             
-            toutes_les_donnees.append(donnees_du_fichier)
+            toutes_les_donnees.append(infos_filtrees)
+            
         except Exception as e:
             st.error(f"Erreur sur le fichier {fichier.name} : {e}")
 
     if toutes_les_donnees:
-        # 2. Créer le DataFrame global
         df_final = pd.DataFrame(toutes_les_donnees)
         
-        st.success("✅ Extraction terminée !")
+        # Optionnel : On réorganise les colonnes pour qu'elles soient dans l'ordre voulu
+        # (Seulement si les colonnes existent dans le DataFrame)
+        colonnes_presentes = [c for c in df_final.columns if c != "Nom_Fichier"]
+        df_final = df_final[["Nom_Fichier"] + colonnes_presentes]
+
+        st.success(f"✅ Analyse terminée sur {len(toutes_les_donnees)} fichiers.")
+        st.dataframe(df_final)
         
-        # Aperçu des 5 premières lignes
-        st.subheader("Aperçu du regroupement")
-        st.dataframe(df_final.head(10))
-        
-        # 3. Préparation du téléchargement Excel
+        # Préparation Excel
         tampon_excel = io.BytesIO()
         with pd.ExcelWriter(tampon_excel, engine='openpyxl') as writer:
             df_final.to_excel(writer, index=False)
         
         st.download_button(
-            label="📥 Télécharger le tableau récapitulatif (Excel)",
+            label="📥 Télécharger l'Excel filtré",
             data=tampon_excel.getvalue(),
-            file_name="regroupement_formulaires.xlsx",
+            file_name="extraction_ciblee.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-else:
-    st.info("Sélectionnez un ou plusieurs fichiers PDF pour commencer.")
-
-st.divider()
-st.caption("Astuce : Vous pouvez sélectionner tout un dossier avec Ctrl+A dans la fenêtre de sélection.")
