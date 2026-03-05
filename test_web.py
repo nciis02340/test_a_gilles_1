@@ -3,67 +3,61 @@ import fitz  # PyMuPDF
 import pandas as pd
 import io
 
-# Configuration de la page
-st.set_page_config(page_title="Extracteur PDF Formulaire", page_icon="📄")
+st.set_page_config(page_title="Extracteur PDF Batch", page_icon="🗂️")
 
-st.title("📄 Extracteur de Formulaire PDF")
-st.write("Chargez un PDF rempli pour transformer ses données en fichier Excel.")
+st.title("🗂️ Extracteur Multi-PDF vers Excel")
+st.write("Glissez plusieurs formulaires PDF ici pour les regrouper dans un seul tableau.")
 
-# 1. Zone de chargement du fichier
-fichier_uploade = st.file_uploader("Choisir un formulaire PDF", type="pdf")
+# 1. Autoriser la sélection de plusieurs fichiers
+fichiers_uploades = st.file_uploader(
+    "Choisir les formulaires PDF", 
+    type="pdf", 
+    accept_multiple_files=True  # L'option clé est ici
+)
 
-if fichier_uploade:
-    try:
-        # Lecture du PDF depuis la mémoire du serveur
-        doc = fitz.open(stream=fichier_uploade.read(), filetype="pdf")
+if fichiers_uploades:
+    toutes_les_donnees = []
+    
+    st.info(f"Analyse de {len(fichiers_uploades)} fichiers en cours...")
+    
+    for fichier in fichiers_uploades:
+        try:
+            # Lire chaque PDF
+            doc = fitz.open(stream=fichier.read(), filetype="pdf")
+            donnees_du_fichier = {"Nom_Fichier": fichier.name} # On ajoute le nom du fichier pour s'y retrouver
+            
+            # Extraire les champs
+            for page in doc:
+                for widget in page.widgets():
+                    donnees_du_fichier[widget.field_name] = widget.field_value
+            
+            toutes_les_donnees.append(donnees_du_fichier)
+        except Exception as e:
+            st.error(f"Erreur sur le fichier {fichier.name} : {e}")
+
+    if toutes_les_donnees:
+        # 2. Créer le DataFrame global
+        df_final = pd.DataFrame(toutes_les_donnees)
         
-        donnees_extraites = {}
+        st.success("✅ Extraction terminée !")
         
-        # 2. Extraction des données des champs (widgets)
-        for page in doc:
-            widgets = page.widgets()
-            for widget in widgets:
-                nom_du_champ = widget.field_name
-                valeur = widget.field_value
-                # On nettoie un peu si c'est du texte
-                if isinstance(valeur, str):
-                    valeur = valeur.strip()
-                donnees_extraites[nom_du_champ] = valeur
+        # Aperçu des 5 premières lignes
+        st.subheader("Aperçu du regroupement")
+        st.dataframe(df_final.head(10))
         
-        if donnees_extraites:
-            st.success(f"✅ {len(donnees_extraites)} champs détectés !")
-            
-            # 3. Création du tableau de données (DataFrame)
-            df = pd.DataFrame([donnees_extraites])
-            
-            # Affichage de l'aperçu
-            st.subheader("Aperçu des données")
-            st.dataframe(df)
-            
-            # 4. Préparation du fichier Excel en mémoire (BytesIO)
-            # Indispensable pour le Cloud car on n'écrit pas sur le disque dur du serveur
-            tampon_excel = io.BytesIO()
-            with pd.ExcelWriter(tampon_excel, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False)
-            
-            # 5. Bouton de téléchargement vers ton PC
-            st.download_button(
-                label="📥 Télécharger les données en Excel",
-                data=tampon_excel.getvalue(),
-                file_name=f"extraction_{fichier_uploade.name}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            
-        else:
-            st.warning("⚠️ Aucun champ de formulaire (nommé) n'a été trouvé dans ce PDF.")
-            st.info("Note : Si c'est un scan sans champs interactifs, ce script ne pourra pas 'lire' le texte visuel.")
-
-    except Exception as e:
-        st.error(f"Une erreur est survenue lors de la lecture : {e}")
-
+        # 3. Préparation du téléchargement Excel
+        tampon_excel = io.BytesIO()
+        with pd.ExcelWriter(tampon_excel, engine='openpyxl') as writer:
+            df_final.to_excel(writer, index=False)
+        
+        st.download_button(
+            label="📥 Télécharger le tableau récapitulatif (Excel)",
+            data=tampon_excel.getvalue(),
+            file_name="regroupement_formulaires.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 else:
-    st.info("En attente d'un fichier PDF...")
+    st.info("Sélectionnez un ou plusieurs fichiers PDF pour commencer.")
 
-# Petit pied de page
 st.divider()
-st.caption("Outil d'automatisation personnel - Propulsé par Streamlit & PyMuPDF")
+st.caption("Astuce : Vous pouvez sélectionner tout un dossier avec Ctrl+A dans la fenêtre de sélection.")
