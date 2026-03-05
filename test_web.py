@@ -10,7 +10,23 @@ st.title("🧠 Extracteur PDF (Formulaires & Texte)")
 st.write("Cet outil extrait les données des champs éditables ET du texte brut (si pas de formulaire).")
 
 # --- CONFIGURATION ---
-CHAMPS_A_GARDER = ["serial number", "customer", "location", "date de reception"]
+CHAMPS_A_GARDER = [
+    "serial number",
+    "MODEL NO", 
+    "SYMPTOMS",
+    "Problems Reported 1",
+    "Problems Reported 2",
+    "Work A", 
+    "Work B", 
+    "Work C",
+    "Work 1",
+    "Work 2", 
+    "WORK PERFORMED", 
+    "CUSTOMER",
+    "location",
+    "Serial #",
+    "DATE RECEIVED"
+]
 
 def extraire_via_regex(texte, mot_cle):
     """Cherche un mot clé dans le texte et récupère ce qui suit (sur la même ligne)"""
