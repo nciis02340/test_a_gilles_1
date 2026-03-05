@@ -13,8 +13,13 @@ CHAMPS_A_GARDER = [
     "serial number",
     "MODEL NO", 
     "SYMPTOMS",
-    "Problems Reported",
-    "Work", 
+    "Problems Reported 1",
+    "Problems Reported 2",
+    "Work A", 
+    "Work B", 
+    "Work C",
+    "Work 1",
+    "Work 2", 
     "WORK PERFORMED", 
     "DATE RECEIVED"
 ]
