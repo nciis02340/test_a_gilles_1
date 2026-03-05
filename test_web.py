@@ -21,7 +21,11 @@ CHAMPS_A_GARDER = [
     "Work 1",
     "Work 2", 
     "WORK PERFORMED", 
+    "CUSTOMER",
+    "location",
+    "Serial #",
     "DATE RECEIVED"
+    
 ]
 # -------------------------------------------------------------------------------------------------------
 
